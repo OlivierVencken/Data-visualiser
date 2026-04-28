@@ -29,4 +29,19 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function datasets()
+    {
+        return $this->hasMany(Dataset::class);
+    }
+
+    public function dashboards()
+    {
+        return $this->hasMany(Dashboard::class);
+    }
+
+    public function visualizations()
+    {
+        return $this->hasMany(Visualization::class);
+    }
 }
