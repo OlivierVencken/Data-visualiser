@@ -6,14 +6,14 @@ use App\Http\Controllers\DataController;
 use App\Models\Dataset;
 
 Route::get('/', function () {
-    return view('home');
-})->name('home');
+    return view('welcome');
+})->name('welcome');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
+    Route::get('/home', function () {
         $datasets = Dataset::where('user_id', auth()->id())->with('rows')->latest()->get();
-        return view('dashboard', ['datasets' => $datasets]);
-    })->name('dashboard');
+        return view('home', ['datasets' => $datasets]);
+    })->name('home');
 
     Route::post('/import', [DataController::class, 'importCsv']);
 });
