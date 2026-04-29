@@ -19,9 +19,13 @@ Route::middleware('auth')->group(function () {
     })->name('home');
 
     Route::resource('dashboards', DashboardController::class)->only(['create', 'store', 'show', 'destroy']);
+    Route::get('dashboards/{dashboard}/settings', [DashboardController::class, 'settings'])->name('dashboards.settings');
+    Route::put('dashboards/{dashboard}/settings', [DashboardController::class, 'updateSettings'])->name('dashboards.settings.update');
+    Route::post('dashboards/{dashboard}/settings/themes', [DashboardController::class, 'storeCustomTheme'])->name('dashboards.settings.themes.store');
+    Route::delete('dashboards/{dashboard}/settings/themes/{theme}', [DashboardController::class, 'destroyCustomTheme'])->name('dashboards.settings.themes.destroy');
     Route::resource('dashboards.visualizations', VisualizationController::class)
         ->scoped()
-        ->only(['create', 'store', 'destroy']);
+        ->only(['create', 'store', 'edit', 'update', 'destroy']);
 
     Route::post('/logout', [UserController::class, 'logout']);
 });

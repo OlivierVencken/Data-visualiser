@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Dashboard;
 use App\Models\Dataset;
 use App\Models\DatasetRow;
+use App\Models\UserColorTheme;
 
 class DashboardController extends Controller
 {
@@ -19,7 +20,8 @@ class DashboardController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'csv_file' => 'required|file|mimes:csv,txt|max:10240' // Max 10MB
+            'csv_file' => 'required|file|mimes:csv,txt|max:10240', // Max 10MB
+            'color_theme' => 'required|in:default,ocean,sunset,forest,mono'
         ]);
 
         // Process CSV
@@ -77,6 +79,11 @@ class DashboardController extends Controller
             'dataset_id' => $dataset->id,
             'name' => $request->name,
             'description' => $request->description,
+            'layout_config' => [
+                'color_theme_mode' => 'builtin',
+                'color_theme' => $request->color_theme,
+                'custom_theme_id' => null,
+            ],
         ]);
 
         return redirect()->route('dashboards.show', $dashboard)->with('success', 'Dashboard created successfully! You can now add visualizations.');
@@ -149,10 +156,140 @@ class DashboardController extends Controller
                 'type' => strtolower($vis->type),
                 'labels' => $labels,
                 'values' => $values,
+                'color_override' => $config['color_override'] ?? null,
             ];
         }
 
-        return view('dashboards.show', compact('dashboard', 'visualizationsData'));
+        $layoutConfig = is_array($dashboard->layout_config) ? $dashboard->layout_config : [];
+        $dashboardTheme = $layoutConfig['color_theme'] ?? 'default';
+        $dashboardCustomThemeColors = null;
+
+        if (($layoutConfig['color_theme_mode'] ?? 'builtin') === 'custom' && !empty($layoutConfig['custom_theme_id'])) {
+            $customTheme = UserColorTheme::where('id', $layoutConfig['custom_theme_id'])
+                ->where('user_id', auth()->id())
+                ->first();
+
+            if ($customTheme && is_array($customTheme->colors) && !empty($customTheme->colors)) {
+                $dashboardCustomThemeColors = $customTheme->colors;
+            }
+        }
+
+        return view('dashboards.show', compact('dashboard', 'visualizationsData', 'dashboardTheme', 'dashboardCustomThemeColors'));
+    }
+
+    public function settings(Dashboard $dashboard)
+    {
+        if ($dashboard->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $layoutConfig = is_array($dashboard->layout_config) ? $dashboard->layout_config : [];
+        $selectedThemeMode = $layoutConfig['color_theme_mode'] ?? 'builtin';
+        $selectedBuiltInTheme = $layoutConfig['color_theme'] ?? 'default';
+        $selectedCustomThemeId = $layoutConfig['custom_theme_id'] ?? null;
+
+        $customThemes = UserColorTheme::where('user_id', auth()->id())
+            ->latest()
+            ->get();
+
+        return view('dashboards.settings', compact(
+            'dashboard',
+            'customThemes',
+            'selectedThemeMode',
+            'selectedBuiltInTheme',
+            'selectedCustomThemeId'
+        ));
+    }
+
+    public function updateSettings(Request $request, Dashboard $dashboard)
+    {
+        if ($dashboard->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'theme_mode' => 'required|in:builtin,custom',
+            'built_in_theme' => 'nullable|in:default,ocean,sunset,forest,mono',
+            'custom_theme_id' => 'nullable|integer',
+        ]);
+
+        $layoutConfig = is_array($dashboard->layout_config) ? $dashboard->layout_config : [];
+
+        if ($validated['theme_mode'] === 'custom') {
+            $customTheme = UserColorTheme::where('id', $validated['custom_theme_id'] ?? null)
+                ->where('user_id', auth()->id())
+                ->first();
+
+            if (!$customTheme) {
+                return back()->withErrors([
+                    'custom_theme_id' => 'Please select one of your custom themes.',
+                ])->withInput();
+            }
+
+            $layoutConfig['color_theme_mode'] = 'custom';
+            $layoutConfig['custom_theme_id'] = $customTheme->id;
+        } else {
+            $layoutConfig['color_theme_mode'] = 'builtin';
+            $layoutConfig['color_theme'] = $validated['built_in_theme'] ?? 'default';
+            $layoutConfig['custom_theme_id'] = null;
+        }
+
+        $dashboard->update([
+            'layout_config' => $layoutConfig,
+        ]);
+
+        return redirect()->route('dashboards.settings', $dashboard)->with('success', 'Dashboard settings updated.');
+    }
+
+    public function storeCustomTheme(Request $request, Dashboard $dashboard)
+    {
+        if ($dashboard->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'theme_name' => 'required|string|max:80',
+            'colors' => 'required|array|min:3|max:8',
+            'colors.*' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+        ]);
+
+        UserColorTheme::create([
+            'user_id' => auth()->id(),
+            'name' => $validated['theme_name'],
+            'colors' => array_values($validated['colors']),
+        ]);
+
+        return redirect()->route('dashboards.settings', $dashboard)->with('success', 'Custom theme created successfully.');
+    }
+
+    public function destroyCustomTheme(Dashboard $dashboard, UserColorTheme $theme)
+    {
+        if ($dashboard->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($theme->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $userDashboards = Dashboard::where('user_id', auth()->id())->get();
+        foreach ($userDashboards as $userDashboard) {
+            $layoutConfig = is_array($userDashboard->layout_config) ? $userDashboard->layout_config : [];
+
+            if (($layoutConfig['color_theme_mode'] ?? null) === 'custom' && (int) ($layoutConfig['custom_theme_id'] ?? 0) === (int) $theme->id) {
+                $layoutConfig['color_theme_mode'] = 'builtin';
+                $layoutConfig['color_theme'] = $layoutConfig['color_theme'] ?? 'default';
+                $layoutConfig['custom_theme_id'] = null;
+
+                $userDashboard->update([
+                    'layout_config' => $layoutConfig,
+                ]);
+            }
+        }
+
+        $theme->delete();
+
+        return redirect()->route('dashboards.settings', $dashboard)->with('success', 'Custom theme deleted.');
     }
 
     public function destroy(Dashboard $dashboard)

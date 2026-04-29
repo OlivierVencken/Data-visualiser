@@ -44,4 +44,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Visualization::class);
     }
+
+    public function colorThemes()
+    {
+        return $this->hasMany(UserColorTheme::class);
+    }
 }

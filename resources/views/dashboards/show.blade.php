@@ -20,7 +20,13 @@
             </div>
         </div>
         
-        <div class="flex flex-col items-end">
+        <div class="flex items-center gap-2">
+            <a href="{{ route('dashboards.settings', $dashboard) }}" class="inline-flex items-center justify-center w-9 h-9 shadow-sm text-gray-600 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors" title="Dashboard settings" aria-label="Dashboard settings">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z"></path>
+                </svg>
+            </a>
             <a href="{{ route('dashboards.visualizations.create', $dashboard) }}" class="inline-flex py-2 px-4 shadow-sm text-sm border-gray-300 font-medium rounded-lg text-white bg-primary hover:bg-primary-hover transition-colors">+ Add Visualization</a>
         </div>
     </nav>
@@ -97,11 +103,19 @@
                                 @csrf
                                 @method('DELETE')
                             </form>
-                            <button type="button" onclick="openDeleteModal('{{ $vis['id'] }}', '{{ htmlspecialchars($vis['name'], ENT_QUOTES) }}')" class="absolute top-4 right-4 m-0 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50" title="Delete Chart">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </button>
+                            <div class="absolute top-4 right-4 m-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                                <a href="{{ route('dashboards.visualizations.edit', [$dashboard->id, $vis['id']]) }}" class="text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-lg hover:bg-gray-100" title="Edit Visualization" aria-label="Edit Visualization">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z"></path>
+                                    </svg>
+                                </a>
+                                <button type="button" onclick="openDeleteModal('{{ $vis['id'] }}', '{{ htmlspecialchars($vis['name'], ENT_QUOTES) }}')" class="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50" title="Delete Chart" aria-label="Delete Chart">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
 
                             <h4 class="font-bold text-lg mb-4 text-gray-900 pr-10">{{ $vis['name'] }}</h4>
                             <div class="flex-1 w-full relative min-h-0 pb-2">
@@ -163,17 +177,33 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const visualizations = @json($visualizationsData);
-            
-            // Re-usable color palette matching Tailwind's primary & accent colors
-            const baseColors = [
-                'rgba(59, 130, 246, 0.8)', // Primary blue
-                'rgba(16, 185, 129, 0.8)', // Emerald
-                'rgba(139, 92, 246, 0.8)', // Violet
-                'rgba(245, 158, 11, 0.8)', // Amber
-                'rgba(239, 68, 68, 0.8)',  // Red
-                'rgba(14, 165, 233, 0.8)', // Sky
-                'rgba(236, 72, 153, 0.8)', // Pink
-            ];
+            const dashboardTheme = @json($dashboardTheme ?? 'default');
+            const dashboardCustomThemeColors = @json($dashboardCustomThemeColors ?? null);
+
+            const themePalettes = {
+                default: ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#0EA5E9', '#EC4899'],
+                ocean: ['#0284C7', '#0EA5E9', '#06B6D4', '#14B8A6', '#0891B2', '#38BDF8', '#0369A1'],
+                sunset: ['#F97316', '#EF4444', '#EC4899', '#F59E0B', '#DC2626', '#FB7185', '#FDBA74'],
+                forest: ['#166534', '#15803D', '#16A34A', '#65A30D', '#22C55E', '#4D7C0F', '#84CC16'],
+                mono: ['#111827', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#1F2937'],
+            };
+
+            function hexToRgba(hex, alpha = 1) {
+                const normalized = (hex || '').replace('#', '');
+                if (normalized.length !== 6) {
+                    return `rgba(59, 130, 246, ${alpha})`;
+                }
+
+                const r = parseInt(normalized.substring(0, 2), 16);
+                const g = parseInt(normalized.substring(2, 4), 16);
+                const b = parseInt(normalized.substring(4, 6), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+
+            const baseColorsHex = Array.isArray(dashboardCustomThemeColors) && dashboardCustomThemeColors.length > 0
+                ? dashboardCustomThemeColors
+                : (themePalettes[dashboardTheme] || themePalettes.default);
+            const baseColors = baseColorsHex.map(color => hexToRgba(color, 0.8));
 
             visualizations.forEach((vis, index) => {
                 const canvas = document.getElementById('chart-' + index);
@@ -183,10 +213,21 @@
                 let bgColors = baseColors[0];
                 let isPieType = vis.type === 'pie' || vis.type === 'doughnut';
                 let isLineType = vis.type === 'line';
+                const overrideColor = typeof vis.color_override === 'string' ? vis.color_override : null;
+                const defaultPrimary = baseColorsHex[0] || '#3B82F6';
+                const lineColor = overrideColor || defaultPrimary;
                 
                 // If it's a pie/doughnut, we need multiple colors for the slices
                 if (isPieType) {
-                    bgColors = vis.labels.map((_, i) => baseColors[i % baseColors.length]);
+                    bgColors = vis.labels.map((_, i) => {
+                        if (overrideColor) {
+                            const opacity = 0.35 + ((i % 6) * 0.1);
+                            return hexToRgba(overrideColor, Math.min(opacity, 0.9));
+                        }
+                        return baseColors[i % baseColors.length];
+                    });
+                } else if (overrideColor) {
+                    bgColors = hexToRgba(overrideColor, 0.8);
                 }
                 
                 new Chart(ctx, {
@@ -196,9 +237,9 @@
                         datasets: [{
                             label: vis.name,
                             data: vis.values,
-                            backgroundColor: isLineType ? 'rgba(59, 130, 246, 0.15)' : bgColors,
+                            backgroundColor: isLineType ? hexToRgba(lineColor, 0.15) : bgColors,
                             borderWidth: 1,
-                            borderColor: isLineType ? 'rgba(59, 130, 246, 1)' : '#ffffff',
+                            borderColor: isLineType ? hexToRgba(lineColor, 1) : '#ffffff',
                             borderRadius: isPieType ? 0 : 4,
                             tension: isLineType ? 0.25 : 0,
                             fill: isLineType ? false : undefined,
