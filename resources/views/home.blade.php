@@ -26,6 +26,56 @@
         </div>
     </nav>
 
+    @if(session('success') || session('error'))
+        <div class="fixed bottom-5 right-5 z-40 space-y-3 pointer-events-none">
+            @if(session('success'))
+                <div data-toast class="max-w-sm w-full bg-white border border-green-100 shadow-lg rounded-xl p-4 pointer-events-auto transition-all duration-300 ease-out opacity-0 translate-x-8">
+                    <div class="flex items-start gap-3">
+                        <div class="mt-0.5">
+                            <div class="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                                <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold text-gray-900">Success</p>
+                            <p class="text-sm text-gray-600 mt-0.5">{{ session('success') }}</p>
+                        </div>
+                        <button type="button" data-toast-close class="text-gray-400 hover:text-gray-600 transition-colors" aria-label="Close notification">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div data-toast class="max-w-sm w-full bg-white border border-red-100 shadow-lg rounded-xl p-4 pointer-events-auto transition-all duration-300 ease-out opacity-0 translate-x-8">
+                    <div class="flex items-start gap-3">
+                        <div class="mt-0.5">
+                            <div class="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+                                <svg class="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold text-gray-900">Error</p>
+                            <p class="text-sm text-gray-600 mt-0.5">{{ session('error') }}</p>
+                        </div>
+                        <button type="button" data-toast-close class="text-gray-400 hover:text-gray-600 transition-colors" aria-label="Close notification">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            @endif
+        </div>
+    @endif
+
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="flex justify-between items-center mb-8">
@@ -38,12 +88,6 @@
                 New Dashboard
             </a>
         </div>
-
-        @if(session('success'))
-            <div class="mb-8 p-4 bg-green-50 border border-green-100 text-green-700 text-sm rounded-xl">
-                {{ session('success') }}
-            </div>
-        @endif
 
         @if($dashboards->isEmpty())
             <!-- Empty State -->
@@ -139,6 +183,20 @@
     </div>
 
     <script>
+        document.querySelectorAll('[data-toast]').forEach((toast) => {
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-x-8');
+            }, 10);
+
+            const hideToast = () => {
+                toast.classList.add('opacity-0', 'translate-x-8');
+                setTimeout(() => toast.remove(), 300);
+            };
+
+            toast.querySelector('[data-toast-close]')?.addEventListener('click', hideToast);
+            setTimeout(hideToast, 5000);
+        });
+
         let currentDeleteFormId = null;
 
         function openDeleteModal(id, name) {
