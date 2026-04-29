@@ -64,33 +64,126 @@
                 </a>
             </div>
         @else
-            <!-- Dashboard Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($dashboards as $dashboard)
-                    <a href="/dashboards/{{ $dashboard->id }}" class="group block bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all text-left">
-                        <div class="flex justify-between items-start mb-4">
+                    <div class="group relative bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all text-left block">
+                        <a href="/dashboards/{{ $dashboard->id }}" class="absolute inset-0 z-0 rounded-2xl"></a>
+                        
+                        <div class="flex justify-between items-start mb-4 relative z-10 pointer-events-none">
                             <div class="w-12 h-12 bg-primary-light rounded-xl flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
                                 <svg class="w-6 h-6 text-primary group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                                 </svg>
                             </div>
-                            <span class="text-xs font-medium text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
-                                {{ $dashboard->visualizations_count ?? 0 }} charts
-                            </span>
+                            <div class="flex items-center gap-2 pointer-events-auto">
+                                <span class="text-xs font-medium text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+                                    {{ $dashboard->visualizations_count ?? 0 }} charts
+                                </span>
+                                <form id="delete-form-{{ $dashboard->id }}" action="{{ route('dashboards.destroy', $dashboard) }}" method="POST" class="m-0 hidden">
+                                    @csrf
+                                    @method('DELETE')
+                                </form>
+                                <button type="button" onclick="openDeleteModal('{{ $dashboard->id }}', '{{ htmlspecialchars($dashboard->name, ENT_QUOTES) }}')" class="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50 pointer-events-auto" title="Delete Dashboard">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-1 group-hover:text-primary transition-colors">{{ $dashboard->name }}</h3>
-                        <p class="text-sm text-gray-500 mb-4 line-clamp-2">{{ $dashboard->description ?? 'No description provided.' }}</p>
                         
-                        <div class="flex items-center text-xs text-gray-400 pt-4 border-t border-gray-50">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-1 group-hover:text-primary transition-colors relative z-0 pointer-events-none">{{ $dashboard->name }}</h3>
+                        <p class="text-sm text-gray-500 mb-4 line-clamp-2 relative z-0 pointer-events-none">{{ $dashboard->description ?? 'No description provided.' }}</p>
+                        
+                        <div class="flex items-center text-xs text-gray-400 pt-4 border-t border-gray-50 relative z-0 pointer-events-none">
                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                             Updated {{ $dashboard->updated_at->diffForHumans() }}
                         </div>
-                    </a>
+                    </div>
                 @endforeach
             </div>
         @endif
     </main>
+
+    <!-- Delete Confirmation -->
+    <div id="deleteModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div id="modalOverlay" class="fixed inset-0 bg-gray-900/30 backdrop-blur-[2px] opacity-0 transition-opacity duration-300 ease-out" aria-hidden="true" onclick="closeDeleteModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div id="modalPanel" class="inline-block align-bottom bg-white rounded-2xl px-4 pt-5 pb-4 text-left overflow-hidden shadow-2xl transform opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95 transition-all duration-300 ease-out sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 relative z-10 border border-gray-100">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-50 sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-semibold text-gray-900" id="modal-title">Delete Dashboard</h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500">Are you sure you want to delete <span id="deleteDashboardName" class="font-bold text-gray-800"></span>? All data and visualizations will be permanently removed. This cannot be undone.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse gap-3">
+                    <button type="button" id="confirmDeleteBtn" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:w-auto sm:text-sm transition-colors">
+                        Delete
+                    </button>
+                    <button type="button" onclick="closeDeleteModal()" class="mt-3 sm:mt-0 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:w-auto sm:text-sm transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDeleteFormId = null;
+
+        function openDeleteModal(id, name) {
+            currentDeleteFormId = 'delete-form-' + id;
+            document.getElementById('deleteDashboardName').textContent = name;
+            
+            const modal = document.getElementById('deleteModal');
+            const overlay = document.getElementById('modalOverlay');
+            const panel = document.getElementById('modalPanel');
+            
+            modal.classList.remove('hidden');
+            
+            // Trigger animation
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                overlay.classList.add('opacity-100');
+                
+                panel.classList.remove('opacity-0', 'translate-y-4', 'sm:translate-y-0', 'sm:scale-95');
+                panel.classList.add('opacity-100', 'translate-y-0', 'sm:scale-100');
+            }, 10);
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('deleteModal');
+            const overlay = document.getElementById('modalOverlay');
+            const panel = document.getElementById('modalPanel');
+            
+            // Reverse animation
+            overlay.classList.remove('opacity-100');
+            overlay.classList.add('opacity-0');
+            
+            panel.classList.remove('opacity-100', 'translate-y-0', 'sm:scale-100');
+            panel.classList.add('opacity-0', 'translate-y-4', 'sm:translate-y-0', 'sm:scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                currentDeleteFormId = null;
+            }, 300); // Wait for transition
+        }
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (currentDeleteFormId) {
+                document.getElementById(currentDeleteFormId).submit();
+            }
+        });
+    </script>
 </body>
 </html>
