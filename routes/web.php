@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\DataController;
 use App\Http\Controllers\DashboardController;
 
 Route::get('/', function () {
@@ -20,7 +19,6 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('dashboards', DashboardController::class)->only(['create', 'store', 'show', 'destroy']);
 
-    Route::post('/import', [DataController::class, 'importCsv']);
     Route::post('/logout', [UserController::class, 'logout']);
 });
 

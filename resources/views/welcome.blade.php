@@ -27,10 +27,10 @@
 
         <!-- Hero Text -->
         <h1 class="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-purple">Data Visualiser</span>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-purple">Data Visualizer</span>
         </h1>
         <p class="mt-4 text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Transform your data into beautiful, interactive visualisations. Analyze trends, discover insights, and make data-driven decisions with ease.
+            Transform your data into beautiful, interactive visualizations. Analyze trends, discover insights, and make data-driven decisions with ease.
         </p>
 
         <!-- CTA Buttons -->
