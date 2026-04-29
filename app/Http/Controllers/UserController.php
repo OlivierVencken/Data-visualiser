@@ -36,7 +36,11 @@ class UserController extends Controller
             return redirect('/home');
         }
 
-        return redirect('/')->withErrors(['email' => 'Invalid credentials']);
+        return back()
+            ->withErrors([
+                'email' => 'These credentials are invalid.',
+            ])
+            ->onlyInput('email');
     }
 
     public function logout()
