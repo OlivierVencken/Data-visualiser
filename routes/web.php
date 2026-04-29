@@ -14,11 +14,12 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/home', function () {
-        $datasets = Dataset::where('user_id', auth()->id())->with('rows')->latest()->get();
-        return view('home', ['datasets' => $datasets]);
+        $dashboards = \App\Models\Dashboard::withCount('visualizations')->where('user_id', auth()->id())->latest()->get();
+        return view('home', ['dashboards' => $dashboards]);
     })->name('home');
 
     Route::post('/import', [DataController::class, 'importCsv']);
+    Route::post('/logout', [UserController::class, 'logout']);
 });
 
 Route::middleware('guest')->group(function () {
@@ -29,8 +30,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', function () {
         return view('register');
     })->name('register');
+    
+    Route::post('/register', [UserController::class, 'register']);
+    Route::post('/login', [UserController::class, 'login']);
 });
-
-Route::post('/register', [UserController::class, 'register']);
-Route::post('/login', [UserController::class, 'login']);
-Route::post('/logout', [UserController::class, 'logout']);

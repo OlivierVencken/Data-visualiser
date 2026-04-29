@@ -21,7 +21,7 @@ class UserController extends Controller
         $user = User::create($incomingFields);
         auth()->login($user);
 
-        return redirect('/home')->with('success', 'Registered and logged in successfully!');
+        return redirect('/home');
     }
 
     public function login(Request $request)
@@ -33,7 +33,7 @@ class UserController extends Controller
 
         if (auth()->attempt($incomingFields)) {
             $request->session()->regenerate();
-            return redirect('/home')->with('success', 'Logged in successfully!');
+            return redirect('/home');
         }
 
         return redirect('/')->withErrors(['email' => 'Invalid credentials']);
