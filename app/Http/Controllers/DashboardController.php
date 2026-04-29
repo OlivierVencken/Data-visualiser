@@ -74,6 +74,7 @@ class DashboardController extends Controller
 
         $dashboard = Dashboard::create([
             'user_id' => auth()->id(),
+            'dataset_id' => $dataset->id,
             'name' => $request->name,
             'description' => $request->description,
         ]);
@@ -88,10 +89,70 @@ class DashboardController extends Controller
             abort(403);
         }
         
-        $dashboard->load('visualizations');
-        $datasets = Dataset::where('user_id', auth()->id())->get();
+        $dashboard->load(['visualizations', 'dataset']);
 
-        return view('dashboards.show', compact('dashboard', 'datasets'));
+        if (!$dashboard->dataset || $dashboard->dataset->user_id !== auth()->id()) {
+            return redirect()->route('home')->with('error', 'The dataset linked to this dashboard could not be found.');
+        }
+        
+        $visualizationsData = [];
+        foreach ($dashboard->visualizations as $vis) {
+            $config = is_string($vis->config) ? json_decode($vis->config, true) : $vis->config;
+            $x_axis = $config['x_axis'] ?? '';
+            $y_axis = $config['y_axis'] ?? '';
+            $agg = $config['aggregation'] ?? 'sum';
+            
+            // For now only let a dashboard visualize its own linked dataset
+            if ((int) $vis->dataset_id !== (int) $dashboard->dataset_id) {
+                continue;
+            }
+
+            $rows = DatasetRow::where('dataset_id', $dashboard->dataset_id)->get();
+            
+            $groups = [];
+            foreach ($rows as $row) {
+                $data = is_string($row->data) ? json_decode($row->data, true) : $row->data;
+
+                $x_val = $data[$x_axis] ?? 'Unknown';
+                // Strip out currency/commas
+                $y_val_raw = $data[$y_axis] ?? 0;
+                $y_val = (float) preg_replace('/[^0-9.-]/', '', (string)$y_val_raw);
+                
+                if (!isset($groups[$x_val])) {
+                    $groups[$x_val] = ['sum' => 0, 'count' => 0];
+                }
+                
+                $groups[$x_val]['sum'] += $y_val;
+                $groups[$x_val]['count'] += 1;
+            }
+            
+            // Limit to 50 items
+            $groups = array_slice($groups, 0, 50, true);
+            
+            $labels = [];
+            $values = [];
+            
+            foreach ($groups as $x => $stats) {
+                $labels[] = (string)$x;
+                if ($agg === 'avg') {
+                    $values[] = $stats['count'] > 0 ? round($stats['sum'] / $stats['count'], 2) : 0;
+                } elseif ($agg === 'count') {
+                    $values[] = $stats['count'];
+                } else {
+                    $values[] = round($stats['sum'], 2);
+                }
+            }
+            
+            $visualizationsData[] = [
+                'id' => $vis->id,
+                'name' => $vis->name,
+                'type' => strtolower($vis->type),
+                'labels' => $labels,
+                'values' => $values,
+            ];
+        }
+
+        return view('dashboards.show', compact('dashboard', 'visualizationsData'));
     }
 
     public function destroy(Dashboard $dashboard)

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\VisualizationController;
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -18,6 +19,9 @@ Route::middleware('auth')->group(function () {
     })->name('home');
 
     Route::resource('dashboards', DashboardController::class)->only(['create', 'store', 'show', 'destroy']);
+    Route::resource('dashboards.visualizations', VisualizationController::class)
+        ->scoped()
+        ->only(['create', 'store', 'destroy']);
 
     Route::post('/logout', [UserController::class, 'logout']);
 });
