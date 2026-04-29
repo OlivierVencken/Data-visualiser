@@ -20,7 +20,7 @@ class DataController extends Controller
         if (($handle = fopen($file->getRealPath(), 'r')) !== false) {
             $header = fgetcsv($handle, 1000, ',');
             if (!$header) {
-                return redirect('/dashboard')->with('error', 'Invalid CSV format.');
+                return redirect('/home')->with('error', 'Invalid CSV format.');
             }
             
             $dataset = Dataset::create([
@@ -56,13 +56,13 @@ class DataController extends Controller
                     'status' => 'completed'
                 ]);
                 
-                return redirect('/dashboard')->with('success', 'Dataset imported successfully!');
+                return redirect('/home')->with('success', 'Dataset imported successfully!');
             }
             
             $dataset->delete(); // Clean up if empty
-            return redirect('/dashboard')->with('error', 'CSV file appears to be empty or misformatted.');
+            return redirect('/home')->with('error', 'CSV file appears to be empty or misformatted.');
         }
 
-        return redirect('/dashboard')->with('error', 'Failed to read the file.');
+        return redirect('/home')->with('error', 'Failed to read the file.');
     }
 }
