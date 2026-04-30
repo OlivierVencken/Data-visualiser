@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('dashboards', function (Blueprint $table) {
-            $table->unsignedBigInteger('dataset_id')->nullable()->after('user_id');
+            $table->foreignId('dataset_id')->nullable()->after('user_id')->constrained()->nullOnDelete();
         });
 
         // Backfill older dashboards using the first linked visualization dataset
@@ -36,6 +36,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('dashboards', function (Blueprint $table) {
+            $table->dropForeign(['dataset_id']);
             $table->dropColumn('dataset_id');
         });
     }
