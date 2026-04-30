@@ -26,8 +26,8 @@
         </div>
 
         <!-- Hero Text -->
-        <h1 class="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent-purple">Data Visualizer</span>
+        <h1 class="text-5xl md:text-6xl font-bold mb-6 tracking-tight text-blue-600">
+            Data Visualizer
         </h1>
         <p class="mt-4 text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
             Transform your data into beautiful, interactive visualizations. Analyze trends, discover insights, and make data-driven decisions with ease.
@@ -40,9 +40,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                 </svg>
                 {{ auth()->check() ? 'Go to Home' : 'Get Started' }}
-            </a>
-            <a href="#" class="inline-flex justify-center items-center px-8 py-3.5 border border-gray-200 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200">
-                View Demo
             </a>
         </div>
 
