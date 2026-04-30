@@ -275,12 +275,15 @@ class DashboardManagementTest extends TestCase
     public function test_dashboard_show_redirects_to_home_when_linked_dataset_is_missing(): void
     {
         $user = User::factory()->create();
+        $dataset = $this->createCompletedDatasetForUser($user);
         $dashboard = Dashboard::create([
             'user_id' => $user->id,
-            'dataset_id' => 9999,
+            'dataset_id' => $dataset->id,
             'name' => 'Broken dashboard',
             'layout_config' => ['color_theme_mode' => 'builtin', 'color_theme' => 'default'],
         ]);
+        $dataset->delete();
+        $dashboard->refresh();
 
         $response = $this->actingAs($user)->get(route('dashboards.show', $dashboard));
 
