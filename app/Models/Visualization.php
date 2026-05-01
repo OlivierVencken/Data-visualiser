@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Visualization extends Model
 {
-    protected $fillable = ['user_id', 'dataset_id', 'dashboard_id', 'name', 'type', 'config'];
+    protected $fillable = ['user_id', 'dataset_id', 'dashboard_id', 'name', 'type', 'config', 'position'];
 
     protected $casts = [
         'config' => 'array',

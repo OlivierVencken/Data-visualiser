@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::put('dashboards/{dashboard}/settings', [DashboardController::class, 'updateSettings'])->name('dashboards.settings.update');
     Route::post('dashboards/{dashboard}/settings/themes', [DashboardController::class, 'storeCustomTheme'])->name('dashboards.settings.themes.store');
     Route::delete('dashboards/{dashboard}/settings/themes/{theme}', [DashboardController::class, 'destroyCustomTheme'])->name('dashboards.settings.themes.destroy');
+    Route::put('dashboards/{dashboard}/visualizations/reorder', [VisualizationController::class, 'reorder'])->name('dashboards.visualizations.reorder');
     Route::resource('dashboards.visualizations', VisualizationController::class)
         ->scoped()
         ->only(['create', 'store', 'edit', 'update', 'destroy']);

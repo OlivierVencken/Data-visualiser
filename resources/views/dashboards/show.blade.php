@@ -15,6 +15,24 @@
                 grid-template-columns: repeat(var(--visualizations-per-row), minmax(0, 1fr));
             }
         }
+
+        .visualization-card {
+            transition: transform 160ms ease, opacity 160ms ease, box-shadow 160ms ease;
+        }
+
+        .visualization-card.is-dragging {
+            opacity: 0.65;
+            transform: scale(0.98);
+            box-shadow: 0 20px 35px rgba(15, 23, 42, 0.16);
+        }
+
+        .drag-handle {
+            cursor: grab;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
     </style>
 </head>
 <body class="bg-background min-h-screen antialiased text-gray-800">
@@ -106,15 +124,20 @@
                     <a href="{{ route('dashboards.visualizations.create', $dashboard) }}" class="inline-flex py-3 px-6 shadow-sm border border-transparent font-medium rounded-lg text-white bg-primary hover:bg-primary-hover">+ Create Visualization</a>
                 </div>
             @else
-                <div class="grid dashboard-visualization-grid gap-8" style="--visualizations-per-row: {{ $visualizationsPerRow }};">
+                <div id="visualizationGrid" class="grid dashboard-visualization-grid gap-8" style="--visualizations-per-row: {{ $visualizationsPerRow }};">
                     @foreach($visualizationsData as $idx => $vis)
-                        <div class="relative group bg-white p-6 shadow-sm border border-gray-100 rounded-2xl flex flex-col" style="height: {{ $visualizationCardHeight }};">
+                        <div class="visualization-card relative group bg-white p-6 shadow-sm border border-gray-100 rounded-2xl flex flex-col" data-visualization-card data-visualization-id="{{ $vis['id'] }}" style="height: {{ $visualizationCardHeight }};">
                             
                             <form id="delete-vis-form-{{ $vis['id'] }}" action="{{ route('dashboards.visualizations.destroy', [$dashboard->id, $vis['id']]) }}" method="POST" class="m-0 hidden">
                                 @csrf
                                 @method('DELETE')
                             </form>
                             <div class="absolute top-4 right-4 m-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                                <button type="button" class="drag-handle text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-lg hover:bg-gray-100" title="Move Visualization" aria-label="Move Visualization">
+                                    <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7l4-4m0 0l4 4m-4-4v18m-4-4l4 4m0 0l4-4M7 8l-4 4m0 0l4 4m-4-4h18m-4-4l4 4m0 0l-4 4"></path>
+                                    </svg>
+                                </button>
                                 <a href="{{ route('dashboards.visualizations.edit', [$dashboard->id, $vis['id']]) }}" class="text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-lg hover:bg-gray-100" title="Edit Visualization" aria-label="Edit Visualization">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
@@ -190,6 +213,9 @@
             const visualizations = @json($visualizationsData);
             const dashboardTheme = @json($dashboardTheme ?? 'default');
             const dashboardCustomThemeColors = @json($dashboardCustomThemeColors ?? null);
+            const visualizationGrid = document.getElementById('visualizationGrid');
+            let draggedCard = null;
+            let originalOrder = [];
 
             const themePalettes = {
                 default: ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#0EA5E9', '#EC4899'],
@@ -284,6 +310,93 @@
                         }
                     }
                 });
+            });
+
+            function currentVisualizationOrder() {
+                return Array.from(visualizationGrid.querySelectorAll('[data-visualization-card]'))
+                    .map(card => Number(card.dataset.visualizationId));
+            }
+
+            function restoreOrder(order) {
+                order.forEach((id) => {
+                    const card = visualizationGrid.querySelector(`[data-visualization-id="${id}"]`);
+                    if (card) visualizationGrid.appendChild(card);
+                });
+            }
+
+            function moveCardNearPointer(targetCard, event) {
+                if (!draggedCard || !targetCard || targetCard === draggedCard) return;
+
+                const rect = targetCard.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const sameRow = event.clientY >= rect.top && event.clientY <= rect.bottom;
+                const shouldPlaceAfter = sameRow
+                    ? event.clientX > centerX
+                    : event.clientY > centerY;
+
+                visualizationGrid.insertBefore(draggedCard, shouldPlaceAfter ? targetCard.nextSibling : targetCard);
+            }
+
+            async function saveVisualizationOrder() {
+                const response = await fetch(@json(route('dashboards.visualizations.reorder', $dashboard)), {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': @json(csrf_token()),
+                    },
+                    body: JSON.stringify({
+                        visualization_ids: currentVisualizationOrder(),
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Unable to save visualization order.');
+                }
+            }
+
+            visualizationGrid.querySelectorAll('[data-visualization-card]').forEach((card) => {
+                const handle = card.querySelector('.drag-handle');
+
+                handle.addEventListener('mousedown', () => {
+                    card.setAttribute('draggable', 'true');
+                });
+
+                handle.addEventListener('touchstart', () => {
+                    card.setAttribute('draggable', 'true');
+                }, { passive: true });
+
+                card.addEventListener('dragstart', (event) => {
+                    if (!event.target.closest('[data-visualization-card]') || !card.hasAttribute('draggable')) return;
+
+                    draggedCard = card;
+                    originalOrder = currentVisualizationOrder();
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', card.dataset.visualizationId);
+
+                    requestAnimationFrame(() => card.classList.add('is-dragging'));
+                });
+
+                card.addEventListener('dragend', async () => {
+                    card.classList.remove('is-dragging');
+                    card.removeAttribute('draggable');
+
+                    if (!draggedCard) return;
+                    draggedCard = null;
+
+                    try {
+                        await saveVisualizationOrder();
+                    } catch (error) {
+                        restoreOrder(originalOrder);
+                    }
+                });
+            });
+
+            visualizationGrid.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                const targetCard = event.target.closest('[data-visualization-card]');
+                moveCardNearPointer(targetCard, event);
             });
         });
 

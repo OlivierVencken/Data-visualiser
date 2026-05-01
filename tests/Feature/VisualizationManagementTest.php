@@ -78,6 +78,37 @@ class VisualizationManagementTest extends TestCase
             'dataset_id' => $dataset->id,
             'name' => 'Revenue by month',
             'type' => 'bar',
+            'position' => 1,
+        ]);
+    }
+
+    public function test_new_visualization_is_added_after_existing_visualizations(): void
+    {
+        $user = User::factory()->create();
+        $dataset = $this->createCompletedDatasetForUser($user);
+        $dashboard = $this->createDashboardForUser($user, $dataset);
+        Visualization::create([
+            'user_id' => $user->id,
+            'dashboard_id' => $dashboard->id,
+            'dataset_id' => $dataset->id,
+            'name' => 'Existing chart',
+            'type' => 'bar',
+            'position' => 4,
+            'config' => ['x_axis' => 'month', 'y_axis' => 'revenue', 'aggregation' => 'sum'],
+        ]);
+
+        $this->actingAs($user)->post(route('dashboards.visualizations.store', $dashboard), [
+            'name' => 'Revenue by month',
+            'type' => 'bar',
+            'x_axis' => 'month',
+            'y_axis' => 'revenue',
+            'aggregation' => 'sum',
+        ]);
+
+        $this->assertDatabaseHas('visualizations', [
+            'dashboard_id' => $dashboard->id,
+            'name' => 'Revenue by month',
+            'position' => 5,
         ]);
     }
 
@@ -270,6 +301,62 @@ class VisualizationManagementTest extends TestCase
         $this->assertDatabaseMissing('visualizations', ['id' => $visualization->id]);
     }
 
+    public function test_user_can_reorder_own_dashboard_visualizations(): void
+    {
+        $user = User::factory()->create();
+        $dataset = $this->createCompletedDatasetForUser($user);
+        $dashboard = $this->createDashboardForUser($user, $dataset);
+        $first = $this->createVisualizationForDashboard($user, $dashboard, $dataset, 'First chart', 1);
+        $second = $this->createVisualizationForDashboard($user, $dashboard, $dataset, 'Second chart', 2);
+        $third = $this->createVisualizationForDashboard($user, $dashboard, $dataset, 'Third chart', 3);
+
+        $response = $this->actingAs($user)->putJson(route('dashboards.visualizations.reorder', $dashboard), [
+            'visualization_ids' => [$third->id, $first->id, $second->id],
+        ]);
+
+        $response->assertOk();
+        $this->assertSame(2, $first->fresh()->position);
+        $this->assertSame(3, $second->fresh()->position);
+        $this->assertSame(1, $third->fresh()->position);
+        $this->assertSame(
+            [$third->id, $first->id, $second->id],
+            $dashboard->fresh()->visualizations->pluck('id')->all()
+        );
+    }
+
+    public function test_user_cannot_reorder_visualizations_for_another_users_dashboard(): void
+    {
+        $owner = User::factory()->create();
+        $intruder = User::factory()->create();
+        $dataset = $this->createCompletedDatasetForUser($owner);
+        $dashboard = $this->createDashboardForUser($owner, $dataset);
+        $visualization = $this->createVisualizationForDashboard($owner, $dashboard, $dataset, 'Revenue chart', 1);
+
+        $response = $this->actingAs($intruder)->putJson(route('dashboards.visualizations.reorder', $dashboard), [
+            'visualization_ids' => [$visualization->id],
+        ]);
+
+        $response->assertForbidden();
+    }
+
+    public function test_reorder_rejects_visualizations_outside_the_dashboard(): void
+    {
+        $user = User::factory()->create();
+        $dataset = $this->createCompletedDatasetForUser($user);
+        $dashboard = $this->createDashboardForUser($user, $dataset);
+        $otherDashboard = $this->createDashboardForUser($user, $dataset);
+        $visualization = $this->createVisualizationForDashboard($user, $dashboard, $dataset, 'Revenue chart', 1);
+        $otherVisualization = $this->createVisualizationForDashboard($user, $otherDashboard, $dataset, 'Other chart', 1);
+
+        $response = $this->actingAs($user)->putJson(route('dashboards.visualizations.reorder', $dashboard), [
+            'visualization_ids' => [$otherVisualization->id, $visualization->id],
+        ]);
+
+        $response->assertUnprocessable();
+        $this->assertSame(1, $visualization->fresh()->position);
+        $this->assertSame(1, $otherVisualization->fresh()->position);
+    }
+
     public function test_user_cannot_delete_visualization_of_another_user(): void
     {
         $owner = User::factory()->create();
@@ -303,6 +390,19 @@ class VisualizationManagementTest extends TestCase
             'name' => 'Sales dashboard',
             'description' => 'Tracks sales',
             'layout_config' => ['color_theme_mode' => 'builtin', 'color_theme' => 'default'],
+        ]);
+    }
+
+    private function createVisualizationForDashboard(User $user, Dashboard $dashboard, Dataset $dataset, string $name, int $position): Visualization
+    {
+        return Visualization::create([
+            'user_id' => $user->id,
+            'dashboard_id' => $dashboard->id,
+            'dataset_id' => $dataset->id,
+            'name' => $name,
+            'type' => 'bar',
+            'position' => $position,
+            'config' => ['x_axis' => 'month', 'y_axis' => 'revenue', 'aggregation' => 'sum'],
         ]);
     }
 

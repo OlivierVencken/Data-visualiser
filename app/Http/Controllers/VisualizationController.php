@@ -65,6 +65,7 @@ class VisualizationController extends Controller
             'dataset_id' => $dataset->id,
             'name' => $validated['name'],
             'type' => $validated['type'],
+            'position' => Visualization::where('dashboard_id', $dashboard->id)->max('position') + 1,
             'config' => [
                 'x_axis' => $validated['x_axis'],
                 'y_axis' => $validated['y_axis'],
@@ -139,6 +140,50 @@ class VisualizationController extends Controller
         ]);
 
         return redirect()->route('dashboards.show', $dashboard)->with('success', 'Visualization updated successfully!');
+    }
+
+    public function reorder(Request $request, Dashboard $dashboard)
+    {
+        if ($dashboard->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'visualization_ids' => 'required|array',
+            'visualization_ids.*' => 'required|integer',
+        ]);
+
+        $ids = array_map('intval', $validated['visualization_ids']);
+        $uniqueIds = array_values(array_unique($ids));
+        if ($ids !== $uniqueIds) {
+            return response()->json([
+                'message' => 'The visualization order contains a duplicate visualization.',
+            ], 422);
+        }
+
+        $dashboardVisualizationIds = Visualization::where('dashboard_id', $dashboard->id)
+            ->where('user_id', auth()->id())
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $invalidIds = array_diff($ids, $dashboardVisualizationIds);
+
+        if (!empty($invalidIds)) {
+            return response()->json([
+                'message' => 'The visualization order contains an invalid visualization.',
+            ], 422);
+        }
+
+        $orderedIds = array_merge($ids, array_values(array_diff($dashboardVisualizationIds, $ids)));
+
+        foreach ($orderedIds as $position => $id) {
+            Visualization::where('id', $id)
+                ->where('dashboard_id', $dashboard->id)
+                ->where('user_id', auth()->id())
+                ->update(['position' => $position + 1]);
+        }
+
+        return response()->json(['status' => 'ok']);
     }
 
     public function destroy(Dashboard $dashboard, Visualization $visualization)

@@ -24,6 +24,6 @@ class Dashboard extends Model
 
     public function visualizations()
     {
-        return $this->hasMany(Visualization::class);
+        return $this->hasMany(Visualization::class)->orderBy('position')->orderBy('id');
     }
 }
