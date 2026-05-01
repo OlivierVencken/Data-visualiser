@@ -240,11 +240,22 @@ class DashboardManagementTest extends TestCase
             'name' => 'Disposable dashboard',
             'layout_config' => ['color_theme_mode' => 'builtin', 'color_theme' => 'default'],
         ]);
+        $visualization = Visualization::create([
+            'user_id' => $user->id,
+            'dashboard_id' => $dashboard->id,
+            'dataset_id' => $dataset->id,
+            'name' => 'Disposable chart',
+            'type' => 'bar',
+            'config' => ['x_axis' => 'month', 'y_axis' => 'revenue', 'aggregation' => 'sum'],
+        ]);
 
         $response = $this->actingAs($user)->delete(route('dashboards.destroy', $dashboard));
 
         $response->assertRedirect(route('home'));
         $this->assertDatabaseMissing('dashboards', ['id' => $dashboard->id]);
+        $this->assertDatabaseMissing('visualizations', ['id' => $visualization->id]);
+        $this->assertDatabaseMissing('dataset_rows', ['dataset_id' => $dataset->id]);
+        $this->assertDatabaseMissing('datasets', ['id' => $dataset->id]);
     }
 
     public function test_user_cannot_delete_dashboard_of_another_user(): void
@@ -262,6 +273,41 @@ class DashboardManagementTest extends TestCase
         $response = $this->actingAs($intruder)->delete(route('dashboards.destroy', $dashboard));
 
         $response->assertForbidden();
+    }
+
+    public function test_deleting_dashboard_keeps_dataset_when_another_dashboard_uses_it(): void
+    {
+        $user = User::factory()->create();
+        $dataset = $this->createCompletedDatasetForUser($user);
+        $dashboard = Dashboard::create([
+            'user_id' => $user->id,
+            'dataset_id' => $dataset->id,
+            'name' => 'First dashboard',
+            'layout_config' => ['color_theme_mode' => 'builtin', 'color_theme' => 'default'],
+        ]);
+        $otherDashboard = Dashboard::create([
+            'user_id' => $user->id,
+            'dataset_id' => $dataset->id,
+            'name' => 'Second dashboard',
+            'layout_config' => ['color_theme_mode' => 'builtin', 'color_theme' => 'default'],
+        ]);
+        $visualization = Visualization::create([
+            'user_id' => $user->id,
+            'dashboard_id' => $dashboard->id,
+            'dataset_id' => $dataset->id,
+            'name' => 'First chart',
+            'type' => 'bar',
+            'config' => ['x_axis' => 'month', 'y_axis' => 'revenue', 'aggregation' => 'sum'],
+        ]);
+
+        $response = $this->actingAs($user)->delete(route('dashboards.destroy', $dashboard));
+
+        $response->assertRedirect(route('home'));
+        $this->assertDatabaseMissing('dashboards', ['id' => $dashboard->id]);
+        $this->assertDatabaseMissing('visualizations', ['id' => $visualization->id]);
+        $this->assertDatabaseHas('dashboards', ['id' => $otherDashboard->id]);
+        $this->assertDatabaseHas('datasets', ['id' => $dataset->id]);
+        $this->assertDatabaseHas('dataset_rows', ['dataset_id' => $dataset->id]);
     }
 
     public function test_home_only_lists_authenticated_users_dashboards(): void

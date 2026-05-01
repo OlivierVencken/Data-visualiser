@@ -7,6 +7,7 @@ use App\Models\Dashboard;
 use App\Models\Dataset;
 use App\Models\DatasetRow;
 use App\Models\UserColorTheme;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -314,7 +315,20 @@ class DashboardController extends Controller
             abort(403);
         }
 
-        $dashboard->delete();
+        DB::transaction(function () use ($dashboard) {
+            $dataset = $dashboard->dataset;
+
+            $dashboard->visualizations()->delete();
+            $dashboard->delete();
+
+            if ($dataset && $dataset->user_id === auth()->id()) {
+                $datasetStillInUse = Dashboard::where('dataset_id', $dataset->id)->exists();
+
+                if (!$datasetStillInUse) {
+                    $dataset->delete();
+                }
+            }
+        });
 
         return redirect()->route('home')->with('success', 'Dashboard deleted successfully.');
     }
