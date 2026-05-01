@@ -39,15 +39,6 @@ class VisualizationController extends Controller
             abort(403);
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'type' => 'required|in:line,bar,pie,doughnut',
-            'x_axis' => 'required|string',
-            'y_axis' => 'required|string',
-            'aggregation' => 'required|in:sum,count,avg',
-            'color_override' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/']
-        ]);
-
         $dataset = Dataset::where('id', $dashboard->dataset_id)
             ->where('user_id', auth()->id())
             ->where('status', 'completed')
@@ -58,6 +49,18 @@ class VisualizationController extends Controller
                 'name' => 'The dataset for this dashboard is not available.',
             ]);
         }
+
+        $firstRow = $dataset->rows()->first();
+        $columns = $firstRow && is_array($firstRow->data) ? array_keys($firstRow->data) : [];
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|in:line,bar,pie,doughnut',
+            'x_axis' => ['required', 'string', Rule::in($columns)],
+            'y_axis' => ['required', 'string', Rule::in($columns)],
+            'aggregation' => 'required|in:sum,count,avg',
+            'color_override' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/']
+        ]);
 
         Visualization::create([
             'user_id' => auth()->id(),

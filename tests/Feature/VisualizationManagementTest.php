@@ -112,6 +112,29 @@ class VisualizationManagementTest extends TestCase
         ]);
     }
 
+    public function test_store_visualization_validates_axis_columns_against_dataset(): void
+    {
+        $user = User::factory()->create();
+        $dataset = $this->createCompletedDatasetForUser($user);
+        $dashboard = $this->createDashboardForUser($user, $dataset);
+
+        $response = $this->actingAs($user)->from(route('dashboards.visualizations.create', $dashboard))
+            ->post(route('dashboards.visualizations.store', $dashboard), [
+                'name' => 'Revenue by month',
+                'type' => 'bar',
+                'x_axis' => 'invalid_column',
+                'y_axis' => 'revenue',
+                'aggregation' => 'sum',
+            ]);
+
+        $response->assertRedirect(route('dashboards.visualizations.create', $dashboard));
+        $response->assertSessionHasErrors('x_axis');
+        $this->assertDatabaseMissing('visualizations', [
+            'dashboard_id' => $dashboard->id,
+            'name' => 'Revenue by month',
+        ]);
+    }
+
     public function test_store_visualization_fails_when_dashboard_dataset_not_available(): void
     {
         $user = User::factory()->create();
