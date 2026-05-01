@@ -57,19 +57,6 @@
                     @error('description')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                 </div>
 
-                <div>
-                    <label for="color_theme" class="block text-sm font-medium text-gray-700 mb-1">Dashboard Color Theme</label>
-                    <select name="color_theme" id="color_theme" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 py-2.5 px-4 bg-gray-50 border">
-                        <option value="default" @selected(old('color_theme', 'default') === 'default')>Default</option>
-                        <option value="ocean" @selected(old('color_theme') === 'ocean')>Ocean</option>
-                        <option value="sunset" @selected(old('color_theme') === 'sunset')>Sunset</option>
-                        <option value="forest" @selected(old('color_theme') === 'forest')>Forest</option>
-                        <option value="mono" @selected(old('color_theme') === 'mono')>Monochrome</option>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Used as the default palette for all visualizations in this dashboard.</p>
-                    @error('color_theme')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                </div>
-
                 <div class="pt-4 border-t border-gray-100">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Upload Dataset</h3>
                     <p class="text-sm text-gray-500 mb-4">Start by importing your first dataset for this dashboard (CSV/TXT). You can add more later.</p>

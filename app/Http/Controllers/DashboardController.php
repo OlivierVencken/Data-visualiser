@@ -21,7 +21,6 @@ class DashboardController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'csv_file' => 'required|file|mimes:csv,txt|max:10240', // Max 10MB
-            'color_theme' => 'required|in:default,ocean,sunset,forest,mono'
         ]);
 
         // Process CSV
@@ -81,7 +80,7 @@ class DashboardController extends Controller
             'description' => $request->description,
             'layout_config' => [
                 'color_theme_mode' => 'builtin',
-                'color_theme' => $request->color_theme,
+                'color_theme' => 'default',
                 'custom_theme_id' => null,
             ],
         ]);

@@ -27,7 +27,6 @@ class DashboardManagementTest extends TestCase
         $response = $this->actingAs($user)->post(route('dashboards.store'), [
             'name' => 'Sales dashboard',
             'description' => 'Tracks monthly revenue',
-            'color_theme' => 'ocean',
             'csv_file' => $file,
         ]);
 
@@ -48,6 +47,9 @@ class DashboardManagementTest extends TestCase
             'row_count' => 2,
         ]);
         $this->assertDatabaseCount('dataset_rows', 2);
+        $this->assertSame('builtin', $dashboard->layout_config['color_theme_mode']);
+        $this->assertSame('default', $dashboard->layout_config['color_theme']);
+        $this->assertNull($dashboard->layout_config['custom_theme_id']);
     }
 
     public function test_dashboard_creation_requires_csv_file(): void
@@ -57,7 +59,6 @@ class DashboardManagementTest extends TestCase
         $response = $this->actingAs($user)->post(route('dashboards.store'), [
             'name' => 'Sales dashboard',
             'description' => 'Tracks monthly revenue',
-            'color_theme' => 'ocean',
         ]);
 
         $response->assertSessionHasErrors('csv_file');
