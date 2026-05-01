@@ -82,6 +82,7 @@ class DashboardController extends Controller
                 'color_theme_mode' => 'builtin',
                 'color_theme' => 'default',
                 'custom_theme_id' => null,
+                'visualizations_per_row' => 2,
             ],
         ]);
 
@@ -161,6 +162,9 @@ class DashboardController extends Controller
 
         $layoutConfig = is_array($dashboard->layout_config) ? $dashboard->layout_config : [];
         $dashboardTheme = $layoutConfig['color_theme'] ?? 'default';
+        $visualizationsPerRow = (int) ($layoutConfig['visualizations_per_row'] ?? 2);
+        $visualizationsPerRow = max(1, min(4, $visualizationsPerRow));
+        $visualizationCardHeight = '24rem';
         $dashboardCustomThemeColors = null;
 
         if (($layoutConfig['color_theme_mode'] ?? 'builtin') === 'custom' && !empty($layoutConfig['custom_theme_id'])) {
@@ -173,7 +177,14 @@ class DashboardController extends Controller
             }
         }
 
-        return view('dashboards.show', compact('dashboard', 'visualizationsData', 'dashboardTheme', 'dashboardCustomThemeColors'));
+        return view('dashboards.show', compact(
+            'dashboard',
+            'visualizationsData',
+            'dashboardTheme',
+            'dashboardCustomThemeColors',
+            'visualizationsPerRow',
+            'visualizationCardHeight'
+        ));
     }
 
     public function settings(Dashboard $dashboard)
@@ -186,6 +197,8 @@ class DashboardController extends Controller
         $selectedThemeMode = $layoutConfig['color_theme_mode'] ?? 'builtin';
         $selectedBuiltInTheme = $layoutConfig['color_theme'] ?? 'default';
         $selectedCustomThemeId = $layoutConfig['custom_theme_id'] ?? null;
+        $selectedVisualizationsPerRow = (int) ($layoutConfig['visualizations_per_row'] ?? 2);
+        $selectedVisualizationsPerRow = max(1, min(4, $selectedVisualizationsPerRow));
 
         $customThemes = UserColorTheme::where('user_id', auth()->id())
             ->latest()
@@ -196,7 +209,8 @@ class DashboardController extends Controller
             'customThemes',
             'selectedThemeMode',
             'selectedBuiltInTheme',
-            'selectedCustomThemeId'
+            'selectedCustomThemeId',
+            'selectedVisualizationsPerRow'
         ));
     }
 
@@ -210,9 +224,11 @@ class DashboardController extends Controller
             'theme_mode' => 'required|in:builtin,custom',
             'built_in_theme' => 'nullable|in:default,ocean,sunset,forest,mono',
             'custom_theme_id' => 'nullable|integer',
+            'visualizations_per_row' => 'required|integer|min:1|max:4',
         ]);
 
         $layoutConfig = is_array($dashboard->layout_config) ? $dashboard->layout_config : [];
+        $layoutConfig['visualizations_per_row'] = (int) $validated['visualizations_per_row'];
 
         if ($validated['theme_mode'] === 'custom') {
             $customTheme = UserColorTheme::where('id', $validated['custom_theme_id'] ?? null)

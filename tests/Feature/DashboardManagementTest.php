@@ -50,6 +50,7 @@ class DashboardManagementTest extends TestCase
         $this->assertSame('builtin', $dashboard->layout_config['color_theme_mode']);
         $this->assertSame('default', $dashboard->layout_config['color_theme']);
         $this->assertNull($dashboard->layout_config['custom_theme_id']);
+        $this->assertSame(2, $dashboard->layout_config['visualizations_per_row']);
     }
 
     public function test_dashboard_creation_requires_csv_file(): void
@@ -62,6 +63,29 @@ class DashboardManagementTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('csv_file');
+    }
+
+    public function test_dashboard_layout_config_defaults_to_two_visualizations_per_row(): void
+    {
+        $user = User::factory()->create();
+        $file = UploadedFile::fake()->createWithContent(
+            'sales.csv',
+            "month,revenue\nJan,100\n"
+        );
+
+        $this->actingAs($user)->post(route('dashboards.store'), [
+            'name' => 'Sales dashboard',
+            'csv_file' => $file,
+        ]);
+
+        $dashboard = Dashboard::first();
+
+        $this->assertSame([
+            'color_theme_mode' => 'builtin',
+            'color_theme' => 'default',
+            'custom_theme_id' => null,
+            'visualizations_per_row' => 2,
+        ], $dashboard->layout_config);
     }
 
     public function test_user_cannot_view_another_users_dashboard(): void
@@ -99,6 +123,7 @@ class DashboardManagementTest extends TestCase
         $response = $this->actingAs($user)->put(route('dashboards.settings.update', $dashboard), [
             'theme_mode' => 'builtin',
             'built_in_theme' => 'forest',
+            'visualizations_per_row' => 3,
         ]);
 
         $response->assertRedirect(route('dashboards.settings', $dashboard));
@@ -107,6 +132,7 @@ class DashboardManagementTest extends TestCase
         $this->assertSame('builtin', $dashboard->layout_config['color_theme_mode']);
         $this->assertSame('forest', $dashboard->layout_config['color_theme']);
         $this->assertNull($dashboard->layout_config['custom_theme_id']);
+        $this->assertSame(3, $dashboard->layout_config['visualizations_per_row']);
     }
 
     public function test_user_can_switch_dashboard_to_custom_theme_when_theme_is_owned(): void
@@ -128,12 +154,14 @@ class DashboardManagementTest extends TestCase
         $response = $this->actingAs($user)->put(route('dashboards.settings.update', $dashboard), [
             'theme_mode' => 'custom',
             'custom_theme_id' => $theme->id,
+            'visualizations_per_row' => 2,
         ]);
 
         $response->assertRedirect(route('dashboards.settings', $dashboard));
         $dashboard->refresh();
         $this->assertSame('custom', $dashboard->layout_config['color_theme_mode']);
         $this->assertSame($theme->id, $dashboard->layout_config['custom_theme_id']);
+        $this->assertSame(2, $dashboard->layout_config['visualizations_per_row']);
     }
 
     public function test_custom_theme_update_fails_when_theme_belongs_to_another_user(): void
@@ -157,6 +185,7 @@ class DashboardManagementTest extends TestCase
             ->put(route('dashboards.settings.update', $dashboard), [
                 'theme_mode' => 'custom',
                 'custom_theme_id' => $foreignTheme->id,
+                'visualizations_per_row' => 2,
             ]);
 
         $response->assertRedirect(route('dashboards.settings', $dashboard));
@@ -317,7 +346,11 @@ class DashboardManagementTest extends TestCase
             'user_id' => $user->id,
             'dataset_id' => $dataset->id,
             'name' => 'Analytics',
-            'layout_config' => ['color_theme_mode' => 'builtin', 'color_theme' => 'default'],
+            'layout_config' => [
+                'color_theme_mode' => 'builtin',
+                'color_theme' => 'default',
+                'visualizations_per_row' => 3,
+            ],
         ]);
 
         Visualization::create([
@@ -356,6 +389,8 @@ class DashboardManagementTest extends TestCase
         $response = $this->actingAs($user)->get(route('dashboards.show', $dashboard));
 
         $response->assertOk();
+        $response->assertViewHas('visualizationsPerRow', 3);
+        $response->assertViewHas('visualizationCardHeight', '24rem');
         $response->assertViewHas('visualizationsData', function (array $visualizationsData) {
             if (count($visualizationsData) !== 3) {
                 return false;

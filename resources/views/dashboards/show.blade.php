@@ -5,6 +5,17 @@
     <title>{{ $dashboard->name }} - Dashboard</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard-visualization-grid {
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 1024px) {
+            .dashboard-visualization-grid {
+                grid-template-columns: repeat(var(--visualizations-per-row), minmax(0, 1fr));
+            }
+        }
+    </style>
 </head>
 <body class="bg-background min-h-screen antialiased text-gray-800">
     <nav class="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
@@ -81,7 +92,7 @@
         </div>
     @endif
 
-    <main class="max-w-7xl mx-auto px-4 py-12">
+    <main class="w-full px-4 sm:px-6 lg:px-8 py-12">
         <div class="grid grid-cols-1 gap-8">
             @if($dashboard->visualizations->isEmpty())
                 <div class="bg-white rounded-2xl border border-gray-100 border-dashed p-12 text-center shadow-sm">
@@ -95,9 +106,9 @@
                     <a href="{{ route('dashboards.visualizations.create', $dashboard) }}" class="inline-flex py-3 px-6 shadow-sm border border-transparent font-medium rounded-lg text-white bg-primary hover:bg-primary-hover">+ Create Visualization</a>
                 </div>
             @else
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="grid dashboard-visualization-grid gap-8" style="--visualizations-per-row: {{ $visualizationsPerRow }};">
                     @foreach($visualizationsData as $idx => $vis)
-                        <div class="relative group bg-white p-6 shadow-sm border border-gray-100 rounded-2xl flex flex-col h-96">
+                        <div class="relative group bg-white p-6 shadow-sm border border-gray-100 rounded-2xl flex flex-col" style="height: {{ $visualizationCardHeight }};">
                             
                             <form id="delete-vis-form-{{ $vis['id'] }}" action="{{ route('dashboards.visualizations.destroy', [$dashboard->id, $vis['id']]) }}" method="POST" class="m-0 hidden">
                                 @csrf

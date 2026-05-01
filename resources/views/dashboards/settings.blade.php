@@ -57,7 +57,7 @@
     <main class="max-w-3xl mx-auto px-4 py-12 space-y-8">
         <div>
             <h1 class="text-3xl font-bold text-gray-900">Dashboard Settings</h1>
-            <p class="text-gray-500 mt-2">Configure appearance settings for this dashboard.</p>
+            <p class="text-gray-500 mt-2">Configure appearance and layout settings for this dashboard.</p>
         </div>
 
         <form action="{{ route('dashboards.settings.update', $dashboard) }}" method="POST" class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm space-y-6">
@@ -100,6 +100,17 @@
                     @endforeach
                 </select>
                 @error('custom_theme_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+            </div>
+
+            <div class="pt-6 border-t border-gray-100">
+                <label for="visualizations_per_row" class="block text-sm font-medium text-gray-700 mb-1">Visualizations per Row</label>
+                <select name="visualizations_per_row" id="visualizations_per_row" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 py-2.5 px-4 bg-gray-50 border">
+                    @for($count = 1; $count <= 4; $count++)
+                        <option value="{{ $count }}" @selected((int) old('visualizations_per_row', $selectedVisualizationsPerRow) === $count)>{{ $count }}</option>
+                    @endfor
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Choose how many visualizations fit next to each other on wide screens.</p>
+                @error('visualizations_per_row')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
 
             <div class="pt-2">
